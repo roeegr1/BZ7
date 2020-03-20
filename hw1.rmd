@@ -1,0 +1,177 @@
+---
+title: "HW1"
+author: "Roee Grinboim"
+date: "3/20/2020"
+output:
+  html_document:
+   toc: true
+   toc_float: true
+   theme: flatly
+   highlight: tango
+---
+
+```{r setup, include=TRUE,echo=TRUE,warning = FALSE, message=FALSE,comment=FALSE}
+# required packages
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(knitr)
+
+path <- paste0(getwd(),'/prostate_cancer_data.csv')
+data <- read.table(file = path,header = T,sep=",")
+```
+
+## Q1. 
+
+  + Reasearch population:
+
+```{r q1,  error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+
+#print(paste0(nrow(data),' bla bla bla'))
+
+```
+
+---
+
+## Q2. {.tabset .tabset-fade}
+
+ + Describe SmokingHistory, FamilyHistoryPCa 
+
+### SmokingHistory
+
+```{r q2_a, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+N = nrow(data)
+
+df_1 <- data %>%
+  group_by(SmokingHistory) %>%
+  summarise(n = n(),
+           `%` = n*100/N)
+
+ggplot(data = df_1,
+       map = aes(x='',y=n,fill=SmokingHistory)) +
+  geom_bar(stat = 'identity',
+           position = position_fill(0.5)) +
+  geom_text(map = aes(label = paste0(round(`%`,1),'%')),
+            position = position_fill(0.5)) + 
+  labs(y = '%',
+       x = '',
+       title = 'Smoking History Distribution',
+       caption = 'prostate_cancer_data.csv') + 
+  coord_flip()
+```
+
+### FamilyHistoryPCa
+
+```{r q2_b, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE,comment=FALSE}
+N = nrow(data)
+
+df_2 <- data %>%
+  group_by(FamilyHistoryPCa) %>%
+  summarise(n = n(),
+            `%` = n*100/N)  
+
+  ggplot(data = df_2,
+         map = aes(x='',
+                   y=n,
+                   fill=FamilyHistoryPCa)) +
+  geom_bar(stat = 'identity',
+           position = position_fill(0.5)) + 
+  geom_text(map = aes(label = paste0(round(`%`,1),'%')),
+            position = position_fill(0.5)) + 
+  labs(y = '%',
+       x = '',
+       title = 'Family History PCa Distribution',
+       caption = 'prostate_cancer_data.csv') + 
+  coord_flip()
+```
+
+---
+
+## Q3.
+
+ + Is there any relationship between PCa to Family history?
+ 
+```{r q3, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+df_3 <- data %>%
+  group_by(Group,FamilyHistoryPCa) %>%
+  summarise(n = n()) %>% 
+  group_by(Group) %>%
+  mutate(`%` = n*100/sum(n))
+
+  ggplot(data = df_3,
+         aes(x=Group ,y=n,fill=FamilyHistoryPCa)) +
+  geom_bar(stat = 'identity',
+           position = position_fill(0.5))  + 
+  geom_text(aes(label = paste0(round(`%`,1),'%')),position = position_fill(0.5)) + 
+  labs(y = '%',
+       x = '',
+       title = 'Family History vs. PCa',
+       caption = 'prostate_cancer_data.csv') + 
+  theme(legend.position = 'top')
+```
+ 
+---
+
+## Q4.a {.tabset .tabset-fade}
+
+ + Describe Age, PSA, Gleason
+
+### Age
+
+```{r q4_a, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+
+data %>% 
+  ggplot(map = aes(x = Age)) +
+  geom_histogram(binwidth = 5,fill = '#F7DC6F') +
+  labs(x = 'Age',
+       y = 'Count',
+       title = 'Age Distribution')
+
+```
+
+### PSA
+
+```{r q4_b, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+
+data %>%
+  ggplot(map = aes(x = PSA)) +
+  geom_histogram(binwidth = 15,fill = '#F7DC6F') +
+  labs(y = 'Count',
+       title = 'PSA Distribution')
+
+```
+
+### Gleason
+
+```{r q4_c, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+
+data %>%
+  ggplot(map = aes(x = Gleason)) +
+  geom_histogram(binwidth = 1,fill = '#F7DC6F') +
+  labs(y = 'Count',
+       title = 'Gleason Distribution')
+
+``` 
+
+## Q4.b
+
+```{r qb_b_1, echo=TRUE, error=FALSE, fig.align="center", fig.height=3.5, fig.width=8, message=FALSE, warning=FALSE, comment=FALSE}
+calc_df <- data %>% select(Age,PSA,Gleason) %>%
+  melt() %>% filter(!is.na(value)) %>%
+  group_by(variable) %>% 
+  summarise(avg = mean(value),
+            trimmed_avg = mean(value,trim = 0.1),
+            sd = sd(value),
+            range = range(value)[2]-range(value)[1],
+            min = min(value),
+            x_0.10 = quantile(value,0.1),
+            x_0.25 = quantile(value,0.25),
+            median = median(value),
+            x_0.75 = quantile(value,0.75),
+            x_0.75 = quantile(value,0.9),
+            max = max(value),
+            IQR = x_0.75 - x_0.25) 
+
+kable(calc_df)
+```
